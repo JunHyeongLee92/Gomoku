@@ -110,7 +110,7 @@ HCURSOR CMyServerDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
+//클라이언트를 계속해서 받아주는 스레드에 사용할 함수
 UINT CMyServerDlg::AcceptFunc(LPVOID pParam)
 {
 	CMyServerDlg *pDlg = (CMyServerDlg*)pParam;
@@ -161,6 +161,7 @@ UINT CMyServerDlg::AcceptFunc(LPVOID pParam)
 	return 0;
 }
 
+//클라이언트로 부터 메세지를 받아주는 스레드에 사용하는 함수
 UINT CMyServerDlg::RecvFunc(LPVOID pParam)
 {
 	CRecvParam *p = (CRecvParam*)pParam;
@@ -222,47 +223,6 @@ UINT CMyServerDlg::RecvFunc(LPVOID pParam)
 }
 
 
-afx_msg LRESULT CMyServerDlg::On25001(WPARAM wParam, LPARAM lParam)
-//이메세지가 발생하게된 원인의 소켓의 핸들이 wParam에 전달된다.
-//lParam은 32비트인데 16비트는 어떤메세지인지 , 나머지 16비트는 에러가 발생했는지 들어있다.
-{
-	SOCKET h_socket = (SOCKET)wParam;
-
-	sockaddr_in client_addr; //ip, 소켓 핸들을 기억해야한다.
-	int sockaddr_in_size = sizeof(sockaddr_in), i;
-	
-	for (i = 0; i < MAX_COUNT; i++) {
-		if (m_client_list[i].h_socket == INVALID_SOCKET) break;
-	}
-	if (i < MAX_COUNT) { //빈방이 있을때만 accept를 한다.
-		m_client_list[i].h_socket = accept(h_socket, (LPSOCKADDR)&client_addr, &sockaddr_in_size);
-		//sockaddr_in_size는 접속자의 로그를 남겨준다		
-		strcpy(m_client_list[i].ip_address, inet_ntoa(client_addr.sin_addr)); 
-		//ip주소 저장
-
-		CString str = "새로운 사용자가 접속했습니다 : ";
-		str += m_client_list[i].ip_address; //새로운 사용자가 접속하면 ip를 띄워준다.
-		
-		AddEvent(str);
-
-		SendFrameData(m_client_list[i].h_socket, 1, str, str.GetLength() + 1);
-
-		str.Format(_T("%d"), i);	//client 번호 전송
-		AddEvent(str);
-		SendFrameData(m_client_list[i].h_socket, 0, str, str.GetLength() + 1);
-
-		WSAAsyncSelect(m_client_list[i].h_socket, m_hWnd, 25002, FD_READ | FD_CLOSE);
-		//비동기
-		//현재윈도우에서 새로 accpet된 소켓에
-		//상대편이 데이터를 주거나(fd_read) 나를 끊으면(fd_close) 메세지 25002를 줘라
-	}
-	else {
-		closesocket(h_socket);
-	}
-
-	return 0;
-}
-
 void CMyServerDlg::AddEvent(CString a_string)
 {
 	while (m_event_list.GetCount() > 1000) {
@@ -274,6 +234,7 @@ void CMyServerDlg::AddEvent(CString a_string)
 	m_event_list.SetCurSel(index);
 }
 
+//서버와 데이터를 주고받을때 프레임화 시켜주는 함수
 void CMyServerDlg::SendFrameData(SOCKET ah_socket, unsigned char a_msg_id, const char *ap_data, unsigned short int a_data_size)
 //어떤 소켓으로,어떤 메세지인지, 어떤데이터를, 얼마만큼 보낼지가 매개변수로 전달된다.
 {
@@ -290,97 +251,138 @@ void CMyServerDlg::SendFrameData(SOCKET ah_socket, unsigned char a_msg_id, const
 	delete[] p_send_data;
 }
 
+//비동기식에서 사용하던 함수로 쓰레드에선 사용되지않는다
+afx_msg LRESULT CMyServerDlg::On25001(WPARAM wParam, LPARAM lParam)
+//이메세지가 발생하게된 원인의 소켓의 핸들이 wParam에 전달된다.
+//lParam은 32비트인데 16비트는 어떤메세지인지 , 나머지 16비트는 에러가 발생했는지 들어있다.
+{
+	//SOCKET h_socket = (SOCKET)wParam;
+
+	//sockaddr_in client_addr; //ip, 소켓 핸들을 기억해야한다.
+	//int sockaddr_in_size = sizeof(sockaddr_in), i;
+	//
+	//for (i = 0; i < MAX_COUNT; i++) {
+	//	if (m_client_list[i].h_socket == INVALID_SOCKET) break;
+	//}
+	//if (i < MAX_COUNT) { //빈방이 있을때만 accept를 한다.
+	//	m_client_list[i].h_socket = accept(h_socket, (LPSOCKADDR)&client_addr, &sockaddr_in_size);
+	//	//sockaddr_in_size는 접속자의 로그를 남겨준다		
+	//	strcpy(m_client_list[i].ip_address, inet_ntoa(client_addr.sin_addr)); 
+	//	//ip주소 저장
+
+	//	CString str = "새로운 사용자가 접속했습니다 : ";
+	//	str += m_client_list[i].ip_address; //새로운 사용자가 접속하면 ip를 띄워준다.
+	//	
+	//	AddEvent(str);
+
+	//	SendFrameData(m_client_list[i].h_socket, 1, str, str.GetLength() + 1);
+
+	//	str.Format(_T("%d"), i);	//client 번호 전송
+	//	AddEvent(str);
+	//	SendFrameData(m_client_list[i].h_socket, 0, str, str.GetLength() + 1);
+
+	//	WSAAsyncSelect(m_client_list[i].h_socket, m_hWnd, 25002, FD_READ | FD_CLOSE);
+	//	//비동기
+	//	//현재윈도우에서 새로 accpet된 소켓에
+	//	//상대편이 데이터를 주거나(fd_read) 나를 끊으면(fd_close) 메세지 25002를 줘라
+	//}
+	//else {
+	//	closesocket(h_socket);
+	//}
+
+	return 0;
+}
 
 afx_msg LRESULT CMyServerDlg::On25002(WPARAM wParam, LPARAM lParam)
 //lParam : 어떤 행위때문에 이 메세지가 발생했는가
 //데이터를 READ할때 실행되는 함수
 {
-	ClientSocket *p_user;
+	//ClientSocket *p_user;
 
-	for (int i = 0; i < MAX_COUNT; i++) {
-		if (m_client_list[i].h_socket == wParam) {
-			/*if(m_client_list[i].h_socket != INVALID_SOCKET &&
-			m_client_list[i].h_socket == wParam) */
-			p_user = &m_client_list[i];
-			/*int A[3]을 여러번 쓰면 매번  *(A+3)으로 실행돼서 덧셈연산이 들어가므로
-			포인터를 하나 만들어 주소를 받아 쓰는게 이득이다.
-			int *p;   p = &A[3];  */
-			break;
-		}
-	}
-	if (WSAGETSELECTEVENT(lParam) == FD_READ)//상대편이 나에게 데이터를 줬을때 25002메세지 발생
-	{
-		WSAAsyncSelect(p_user->h_socket, m_hWnd, 25002, FD_CLOSE);
-		//끊어 읽기를 할것 이기 때문에 25002가 무한발생하는 것을
-		//막기 위해 읽는동안 읽음에 대한 비동기를 끊어준다.
+	//for (int i = 0; i < MAX_COUNT; i++) {
+	//	if (m_client_list[i].h_socket == wParam) {
+	//		/*if(m_client_list[i].h_socket != INVALID_SOCKET &&
+	//		m_client_list[i].h_socket == wParam) */
+	//		p_user = &m_client_list[i];
+	//		/*int A[3]을 여러번 쓰면 매번  *(A+3)으로 실행돼서 덧셈연산이 들어가므로
+	//		포인터를 하나 만들어 주소를 받아 쓰는게 이득이다.
+	//		int *p;   p = &A[3];  */
+	//		break;
+	//	}
+	//}
+	//if (WSAGETSELECTEVENT(lParam) == FD_READ)//상대편이 나에게 데이터를 줬을때 25002메세지 발생
+	//{
+	//	WSAAsyncSelect(p_user->h_socket, m_hWnd, 25002, FD_CLOSE);
+	//	//끊어 읽기를 할것 이기 때문에 25002가 무한발생하는 것을
+	//	//막기 위해 읽는동안 읽음에 대한 비동기를 끊어준다.
 
-		unsigned char check, msg_id;//message_id
-		unsigned short int body_size;
+	//	unsigned char check, msg_id;//message_id
+	//	unsigned short int body_size;
 
-		recv(p_user->h_socket, (char*)&check, 1, 0); //헤더 1바이트씩 읽음 
-													 //헤더 유효성 체크하는 부분
-		if (check == 27) {
-			recv(p_user->h_socket, (char*)&msg_id, 1, 0); //메세지 종류 부분을 읽음
-			recv(p_user->h_socket, (char*)&body_size, 2, 0); //body를 읽을 수 있는 사이즈 부분을 읽음
+	//	recv(p_user->h_socket, (char*)&check, 1, 0); //헤더 1바이트씩 읽음 
+	//												 //헤더 유효성 체크하는 부분
+	//	if (check == 27) {
+	//		recv(p_user->h_socket, (char*)&msg_id, 1, 0); //메세지 종류 부분을 읽음
+	//		recv(p_user->h_socket, (char*)&body_size, 2, 0); //body를 읽을 수 있는 사이즈 부분을 읽음
 
-			if (body_size > 0) {
-				char *p_body_data = new char[body_size]; //바디사이즈 읽어와서 동적할당한다.
+	//		if (body_size > 0) {
+	//			char *p_body_data = new char[body_size]; //바디사이즈 읽어와서 동적할당한다.
 
-				recv(p_user->h_socket, p_body_data, body_size, 0);
+	//			recv(p_user->h_socket, p_body_data, body_size, 0);
 
-				CString str;
+	//			CString str;
 
-				if (msg_id == 1) {
+	//			if (msg_id == 1) {
 
-					str = p_body_data;
-					AddEvent(str);
+	//				str = p_body_data;
+	//				AddEvent(str);
 
-					for (int i = 0; i < MAX_COUNT; i++) {
-						if (m_client_list[i].h_socket != INVALID_SOCKET) {
-							SendFrameData(m_client_list[i].h_socket, 1, str, str.GetLength() + 1);
-							//자기한테 붙어있는 모든 클라이언트에게 받은 데이터를 전달해준다.
-						}
-					}
+	//				for (int i = 0; i < MAX_COUNT; i++) {
+	//					if (m_client_list[i].h_socket != INVALID_SOCKET) {
+	//						SendFrameData(m_client_list[i].h_socket, 1, str, str.GetLength() + 1);
+	//						//자기한테 붙어있는 모든 클라이언트에게 받은 데이터를 전달해준다.
+	//					}
+	//				}
 
-				}
-				else if (msg_id == 2) {
-					//바둑돌 좌표 데이터 recv
+	//			}
+	//			else if (msg_id == 2) {
+	//				//바둑돌 좌표 데이터 recv
 
-					str = p_body_data;
-					int pos = _ttoi(str);	//CString to integer
+	//				str = p_body_data;
+	//				int pos = _ttoi(str);	//CString to integer
 
-					int y = pos / 100;
-					int x = pos % 100;
+	//				int y = pos / 100;
+	//				int x = pos % 100;
 
-					if (m_step_count % 2)
-						color = 2;
-					else
-						color = 1;
+	//				if (m_step_count % 2)
+	//					color = 2;
+	//				else
+	//					color = 1;
 
-					pos += color * 10000;	//좌표값에 바둑돌색깔값을 더함
-					str.Format(_T("%d"), pos);
-					m_step_count++;
+	//				pos += color * 10000;	//좌표값에 바둑돌색깔값을 더함
+	//				str.Format(_T("%d"), pos);
+	//				m_step_count++;
 
-					for (int i = 0; i < MAX_COUNT; i++) {
-						if (m_client_list[i].h_socket != INVALID_SOCKET) {
-							//자기한테 붙어있는 모든 클라이언트에게 받은 데이터를 전달해준다.
-							SendFrameData(m_client_list[i].h_socket, 2, str, str.GetLength() + 1); // 바둑돌 좌표값 전송
-						}
-					}
-				}
-				delete[] p_body_data; //읽은 뒤 동적할당 해제해준다.
-			}
+	//				for (int i = 0; i < MAX_COUNT; i++) {
+	//					if (m_client_list[i].h_socket != INVALID_SOCKET) {
+	//						//자기한테 붙어있는 모든 클라이언트에게 받은 데이터를 전달해준다.
+	//						SendFrameData(m_client_list[i].h_socket, 2, str, str.GetLength() + 1); // 바둑돌 좌표값 전송
+	//					}
+	//				}
+	//			}
+	//			delete[] p_body_data; //읽은 뒤 동적할당 해제해준다.
+	//		}
 
-			WSAAsyncSelect(p_user->h_socket, m_hWnd, 25002, FD_READ | FD_CLOSE);
-			//작업을 다하고 다시 FD_READ에 대한 비동기를 걸어준다.
-		}
-	}
+	//		WSAAsyncSelect(p_user->h_socket, m_hWnd, 25002, FD_READ | FD_CLOSE);
+	//		//작업을 다하고 다시 FD_READ에 대한 비동기를 걸어준다.
+	//	}
+	//}
 
-	else { //상대편이 나를 끊었을 때
+	//else { //상대편이 나를 끊었을 때
 
-		   //closesocket((SOCKET)wParam); //서버를 끊은 소켓의 주소를 불러와야한다
-		closesocket(p_user->h_socket); //m_client_list[i].h_socket		
-		p_user->h_socket = INVALID_SOCKET; //서버를 끊은 방에 INVALID_SOCKET값을 넣어준다.
-	}
+	//	   //closesocket((SOCKET)wParam); //서버를 끊은 소켓의 주소를 불러와야한다
+	//	closesocket(p_user->h_socket); //m_client_list[i].h_socket		
+	//	p_user->h_socket = INVALID_SOCKET; //서버를 끊은 방에 INVALID_SOCKET값을 넣어준다.
+	//}
 	return 0;
 }

@@ -49,6 +49,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+	//각각 28001, 28002 메세지가 발생했을 때 실행되는 함수
 	afx_msg LRESULT On28001(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT On28002(WPARAM wParam, LPARAM lParam);
 

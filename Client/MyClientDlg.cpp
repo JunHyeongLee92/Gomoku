@@ -70,6 +70,7 @@ BOOL CMyClientDlg::OnInitDialog()
 
 	WSAAsyncSelect(mh_socket, m_hWnd, 28001, FD_CONNECT);
 	//접속에 성공하든 실패하든 FD_CONNECT메세지가 발생한다.
+	//CONNECT메세지가 발생하면 28001에 대한 함수를 실행시킨다
 	
 	m_connected_flag = 1;
 	//flag가 0이면 Invalid_socket의 소켓자체가 없이 서버에 접속을 하지 않은 상태
@@ -145,7 +146,7 @@ HCURSOR CMyClientDlg::OnQueryDragIcon()
 }
 
 
-
+//서버로 연결이 시도될때 실행되는 함수
 afx_msg LRESULT CMyClientDlg::On28001(WPARAM wParam, LPARAM lParam)
 //커넥트를 시도한 소켓(mh_socket)의 핸들이 wParam에 전달
 //클라이언트는 소켓이 하나이기 때문에 wParam을 쓸필요 없다.
@@ -186,6 +187,7 @@ void CMyClientDlg::AddEvent(CString a_string)
 	m_event_list.SetCurSel(index);
 }
 
+//서버와 데이터를 주고받을때 프레임화 시켜주는 함수
 void CMyClientDlg::SendFrameData(SOCKET ah_socket,unsigned char a_msg_id, const char *ap_data, unsigned short int a_data_size)
 //어떤 소켓으로,어떤 메세지인지, 어떤데이터를, 얼마만큼 보낼지가 매개변수로 전달된다.
 {
@@ -222,7 +224,7 @@ void CMyClientDlg::OnBnClickedSendBtn()
 	}//서버로 데이터를 쏴준다
 }
 
-
+//이 함수는 비동기식으로 계속 실행된다
 afx_msg LRESULT CMyClientDlg::On28002(WPARAM wParam, LPARAM lParam)
 //READ 메세지를 처리할 함수 RECV
 //데이터를 받을때 사용됨

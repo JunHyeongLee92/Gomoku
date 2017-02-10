@@ -32,8 +32,9 @@ public:
 	void AddEvent(CString a_string);
 	void SendFrameData(SOCKET ah_socket, unsigned char a_msg_id, const char *ap_data, unsigned short int a_data_size);
 	static UINT AcceptFunc(LPVOID pParam);
+	//클라이언트를 계속해서 받아주는 스레드에 사용할 함수
 	static UINT RecvFunc(LPVOID pParam);
-
+	//클라이언트로 부터 메세지를 받아주는 스레드에 사용하는 함수
 
 	
 // 대화 상자 데이터입니다.
