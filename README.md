@@ -16,4 +16,4 @@
 
 * 전체 실행 화면
 
-    ![testimage](./img/testimage.JPG)
+    ![testimage](./img/testimage.png)
