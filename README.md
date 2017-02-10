@@ -15,4 +15,4 @@
  서버와 클라이언트 둘 다 MFC로 구현되었다. 
 
 * 전체 실행 화면
-    ![run_image](./img/testimage.jpg)
+    ![testimage](./img/testimage.JPG)
